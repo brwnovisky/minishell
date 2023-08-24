@@ -6,65 +6,45 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/15 20:29:34 by root              #+#    #+#             */
-/*   Updated: 2023/07/19 09:18:55 by root             ###   ########.fr       */
+/*   Updated: 2023/08/17 19:31:12 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../headers/minishell.h"
+#include "../inc/minishell.h"
 
-void remove_variable(t_env **list, char *var)
+void	previous_var(t_shell **shell, t_env *var_prev)
 {
-	t_env	*temp;
+	t_env	*var_target;
 
-	temp = *list;
-	if (temp == NULL)
-		return ;
-	while (temp != NULL)
-	{
-		if (!strcmp_mod(temp->var, var))
-		{
-			if (temp->prev == NULL)
-			{
-				*list = temp->next;
-				if (temp->next)
-					temp->next->prev = NULL;
-			}
-			else if (temp->next == NULL)
-				temp->prev->next = NULL;
-			else
-			{
-				temp->prev->next = temp->next;
-				temp->next->prev = temp->prev;
-			}
-			free(temp->var);
-			free(temp->msg);
-			free(temp);
-			return ;
-		}
-		temp = temp->next;
-	}
+	var_target = var_prev->next;
+	var_prev->next = var_target->next;
+	if (var_prev->next == NULL)
+		(*shell)->env_last = var_prev;
+	safe_free(&var_target->key);
+	safe_free(&var_target->value);
+	safe_free(&var_target);
+	(*shell)->env_n -= 1;
 }
-
-// void	c_unset(t_shell **shell)
-// {
-// 	shell = (shell);
-// 	if (!strcmp_mod((*shell)->command, "unset"))
-// 	{
-// 		apart_args(shell, ' ', exe_unset);
-// 	}
-// }
-
-// void	exe_unset(t_shell **shell)
-// {
-// 	if ((*shell)->content)
-// 	{
-// 		return ;
-// 	}
-// }
 
 void	c_unset(t_shell **shell)
 {
-	if (is_var(shell, (*shell)->pipelist->commands->next->arg))
-		remove_variable(&(*shell)->env, (*shell)->pipelist->commands->next->arg);
-	(*shell)->exit_code = 0;
+	t_cmd	*current;
+	t_env	*var_prev;
+
+	current = (*shell)->pipelist->commands->next;
+	if (!current || (current && current->arg[0] == CHAR_MINUS))
+	{
+		if (current == NULL)
+			return ;
+		if (current->arg[0] == CHAR_MINUS)
+			ft_printfd(ERROR_OPTION, STDERR_FILENO, NAME_UNSET);
+		return ;
+	}
+	while (current && current->arg)
+	{
+		var_prev = find_var(shell, current->arg, ft_strlen(current->arg), 1);
+		if (var_prev)
+			previous_var(shell, var_prev);
+		current = current->next;
+	}
 }

@@ -1,4 +1,16 @@
-#include "../headers/minishell.h"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: bluiz-al <bluiz-al@student.42sp.org.br>    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/08/15 19:49:17 by root              #+#    #+#             */
+/*   Updated: 2023/08/20 17:42:33 by bluiz-al         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "../inc/minishell.h"
 
 char	*strchr_mod(const char *str, int c)
 {
@@ -16,29 +28,7 @@ char	*strchr_mod(const char *str, int c)
 		if ((char) c == '\0' && *str == '\0')
 			return ((char *)str);
 	}
-	return (0);
-}
-
-char	*strchr_rev(const char *str, int c)
-{
-	int			i;
-	const char	*temp;
-
-	i = 0;
-	temp = str;
-	if (str != NULL)
-	{
-		while (*str != '\0')
-		{
-			if (*str == (char) c)
-				return ((char *)ft_substr(temp, 0, i));
-			i++;
-			str++;
-		}
-		if ((char) c == '\0' && *str == '\0')
-			return ((char *)str);
-	}
-	return (0);
+	return (NULL);
 }
 
 int	strcmp_mod(const char *s1, const char *s2)
@@ -53,42 +43,32 @@ int	strcmp_mod(const char *s1, const char *s2)
 	while (i < len)
 	{
 		if (s1[i] != s2[i] && (s1[i] != '\0' || s2[i] != '\0'))
-		{
 			return ((unsigned char) s1[i] - (unsigned char) s2[i]);
-		}
 		i++;
 	}
-	return (0);
+	return (SUCCES);
 }
 
-int	ft_isalnum_mod(int c)
+int	ft_atoi64(const char *nptr)
 {
-	int	r;
+	size_t	result;
+	int		sign;
 
-	r = ((c >= 'a' && c <= 'z')
-			|| (c >= 'A' && c <= 'Z')
-			|| (c >= '0' && c <= '9') || (c == '_' ));
-	return (r);
-}
-
-char	*ft_strip(char *line, char striped_char)
-{
-	int		i;
-	int		k;
-	int		len_line;
-	int		len_total;
-	char	*temp;
-
-	len_line = ft_strlen(line) - 1;
-	i = 0;
-	k = len_line;
-	while (line[i] && line[i] == striped_char)
-		i++;
-	while (k >= 0 && line[k] == striped_char)
-		k--;
-	len_total = k - i + 1;
-	temp = ft_calloc(sizeof(char *), len_total);
-	temp = ft_substr(line, i, len_total);
-	temp[len_total] = '\0';
-	return (temp);
+	result = 0;
+	sign = 1;
+	while ((*nptr >= 9 && *nptr <= 13) || *nptr == 32)
+		nptr++;
+	if (*nptr == '-' || *nptr == '+')
+	{	
+		if (*nptr == '-')
+			sign = -sign;
+		nptr++;
+	}
+	while (ft_isdigit(*nptr))
+		result = result * 10 + *nptr++ - '0';
+	if ((sign == -1 && result > (((size_t)INT64_MAX)) + 1) \
+	|| (sign == 1 && result > (size_t)INT64_MAX))
+		return (2);
+	else
+		return (result * sign);
 }

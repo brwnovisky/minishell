@@ -5,80 +5,49 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/02/22 15:14:03 by macarval          #+#    #+#             */
-/*   Updated: 2023/07/17 11:23:50 by root             ###   ########.fr       */
+/*   Created: 2023/02/22 15:14:03 by root              #+#    #+#             */
+/*   Updated: 2023/08/15 19:51:04 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../headers/minishell.h"
+#include "../inc/minishell.h"
 
-void	print_args_echo(t_cmd *list)
+static char	**flag_scan(t_block *current)
 {
-	t_cmd	*temp;
-	char	*cmd;
-	char	*flag;
+	char	**args;
+	int		has_flag_valid;
 
-	flag = "-n";
-	cmd = "echo";
-	temp = list;
-	while (temp != NULL)
+	args = &current->args[1];
+	has_flag_valid = 0;
+	while (args && *args
+		&& (**args == *STR_VOID || !strcmp_mod(*args, STR_FLAG_ECHO)))
 	{
-		if (!strcmp_mod(temp->arg, cmd))
-			temp = temp->next;
-		else if (!strcmp_mod(temp->arg, flag))
-			temp = temp->next;
-		else if (temp->next != NULL)
-		{
-			printf("%s ", temp->arg);
-			temp = temp->next;
-		}
-		else
-		{
-			printf("%s", temp->arg);
-			temp = temp->next;
-		}
+		has_flag_valid += (!strcmp_mod(*args, STR_FLAG_ECHO));
+		args++;
 	}
+	if (has_flag_valid)
+		return (args);
+	else
+		return (NULL);
+}	
+
+void	c_echo(t_shell **shell)
+{
+	char	**args;
+	char	**flag;
+
+	flag = flag_scan((*shell)->current);
+	if (flag)
+		args = flag;
+	else
+		args = &(*shell)->current->args[1];
+	while (args && *args)
+	{
+		printf("%s", *args++);
+		if (args && *args && **args)
+			printf(" ");
+	}
+	if (!flag)
+		printf("\n");
+	(*shell)->exit_code = 0;
 }
-
-// char	*flag_echo(t_shell **shell)
-// {
-// 	char	*temp_line;
-// 	char	*flag;
-// 	char	*test;
-
-// 	test = "-n";
-// 	if ((*shell)->pipelist->commands->next == NULL)
-// 	{
-// 		flag = ft_strdup("");
-// 		return (NULL);
-// 	}
-// 	temp_line = (*shell)->pipelist->commands->next->arg;
-// 	if ((*shell)->line == NULL)
-// 		return (NULL);
-// 	if (temp_line[0] == test[0] && temp_line[1] == test[1])
-// 	{
-// 		flag = ft_strdup("-n");
-// 		if (temp_line[0] == test[0] && temp_line[1] == test[1])
-// 			(*shell)->line = "";
-// 		else
-// 			(*shell)->line = temp_line;
-// 	}
-// 	else
-// 		flag = ft_strdup("");
-// 	return (flag);
-// }
-
-// void	c_echo(t_shell **shell)
-// {
-// 	char	*flag;
-
-// 	if ((*shell)->line == NULL)
-// 		return ;
-// 	flag = flag_echo(shell);
-// 	print_args_echo((*shell)->pipelist->commands);
-// 	if (flag == NULL || (*shell)->pipelist->commands->next == NULL
-// 		|| strcmp_mod(flag, "-n"))
-// 		printf("\n");
-// 	(*shell)->exit_code = 0;
-// 	free (flag);
-// }

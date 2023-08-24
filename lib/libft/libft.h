@@ -77,6 +77,8 @@ int		ft_memcmp(const void *s1, const void *s2, size_t n);
 
 int		ft_printf(const char *str, ...);
 
+int		ft_printfd(const char *str, int fd, ...);
+
 size_t	ft_strlcat(char *dst, const char *src, size_t size);
 
 size_t	ft_strlcpy(char *dest, const char *src, size_t size);

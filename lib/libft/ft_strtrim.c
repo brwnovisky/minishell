@@ -16,8 +16,9 @@ char	*ft_strtrim(char const *s1, const char *set)
 {
 	char	*trim;
 	char	*rev;
+	char	*set_reset;
 
-	trim = (char *)set;
+	set_reset = (char *)set;
 	rev = (char *)s1 + ft_strlen(s1) - 1;
 	while (*set && *s1)
 	{
@@ -25,11 +26,13 @@ char	*ft_strtrim(char const *s1, const char *set)
 		{
 			s1 += *s1 == *set;
 			rev -= *rev == *set;
-			set = trim;
+			set = set_reset;
 		}
 		else
 			set++;
 	}
+	if (rev == (char *)s1 + ft_strlen(s1) - 1)
+		return ((char *)s1);
 	trim = ft_calloc(((rev - s1) + 2) * (*s1 > 0) + (*s1 == 0), sizeof(char));
 	ft_strlcpy(trim, s1, ((rev - s1) + 2) * (*s1 > 0) + (*s1 == 0));
 	return (trim);

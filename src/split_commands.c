@@ -6,11 +6,11 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/15 20:29:21 by root              #+#    #+#             */
-/*   Updated: 2023/07/15 21:32:56 by root             ###   ########.fr       */
+/*   Updated: 2023/08/15 20:01:41 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../headers/minishell.h"
+#include "../inc/minishell.h"
 
 static char	**ft_mtx(t_shell **shell, char *s, char *c, char **mtx)
 {
@@ -43,19 +43,4 @@ static char	**ft_mtx(t_shell **shell, char *s, char *c, char **mtx)
 char	**split_commands(t_shell **shell, char *s, char c)
 {
 	return (ft_mtx(shell, s, &c, NULL));
-}
-
-void	new_command(t_block *current)
-{
-	current->commands_n += 1;
-	if (!current->current_command)
-	{
-		current->current_command = (t_cmd *)ft_calloc(1, sizeof(t_cmd));
-		current->commands = current->current_command;
-	}
-	else if (current->commands)
-	{
-		current->current_command->next = (t_cmd *)ft_calloc(1, sizeof(t_cmd));
-		current->current_command = current->current_command->next;
-	}
 }

@@ -1,21 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   pwd.c                                              :+:      :+:    :+:   */
+/*   cd2.c                                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
+/*   By: tasantos <tasantos@student.42sp.org.br>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/06/10 17:32:46 by root              #+#    #+#             */
-/*   Updated: 2023/06/27 11:16:03 by root             ###   ########.fr       */
+/*   Created: 2023/08/20 20:05:26 by tasantos          #+#    #+#             */
+/*   Updated: 2023/08/20 20:05:57 by tasantos         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../inc/minishell.h"
 
-void	c_pwd(t_shell **shell)
+int	change_directory(char *new_path)
 {
-	char	buf[BUF];
+	char	*str_tmp;
+	int		change_dir;
 
-	(void)shell;
-	printf("%s\n", getcwd(buf, BUF));
+	str_tmp = new_path;
+	change_dir = chdir(str_tmp);
+	if (str_tmp && change_dir < 0)
+	{
+		str_tmp = ft_strjoin("/", str_tmp);
+		change_dir = chdir(str_tmp);
+		free (str_tmp);
+	}
+	return (change_dir);
 }

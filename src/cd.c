@@ -3,52 +3,89 @@
 /*                                                        :::      ::::::::   */
 /*   cd.c                                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
+/*   By: tasantos <tasantos@student.42sp.org.br>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/15 19:49:31 by root              #+#    #+#             */
-/*   Updated: 2023/07/15 19:49:32 by root             ###   ########.fr       */
+/*   Updated: 2023/08/20 20:10:43 by tasantos         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../headers/minishell.h"
+#include "../inc/minishell.h"
 
-void	update_var(t_shell **shell, char *name, char *value)
+static char	*oldpwd_switch(t_shell **shell)
 {
-	char	*env;
+	t_env	*var;
 
-	env = NULL;
-	if (env && shell && name)
+	var = find_var(shell, "OLDPWD", 6, 0);
+	if (var && var->value[0] != CHAR_SLASH)
 	{
-		free(env);
-		env = ft_strdup(value);
+		printf("/%s\n", var->value);
+		return (var->value);
+	}
+	else if (var)
+	{
+		printf("%s\n", var->value);
+		return (var->value);
+	}
+	else
+	{
+		ft_printfd(ERROR_CD2, STDERR_FILENO);
+		return (NULL);
 	}
 }
 
-// void	c_cd(t_shell **shell)
-// {
-// 	char	*var;
-// 	char	*oldpwd;
-// 	char	buf[256];
+int	returned_error(t_shell **shell, int error)
+{
+	if (error)
+	{
+		(*shell)->exit_code = 1;
+		return (TRUE);
+	}
+	return (FALSE);
+}
 
-// 	shell = (shell);
-// 	var = NULL;
-// 	if (!is_flag_null(shell, ""))
-// 		return ;
-// 	if (!(*shell)->content && !(*shell)->flag)
-// 		(*shell)->content = getenv("HOME");
-// 	else if (!strcmp_mod((*shell)->flag, "-"))
-// 	{
-// 		(*shell)->content = var;
-// 		printf("%s\n", (*shell)->content);
-// 	}
-// 	oldpwd = var;
-// 	if (chdir((*shell)->content) != 0)
-// 		printf("bash: cd: %s: No such file or directory\n", 
-// 		(*shell)->content);
-// 	else
-// 	{
-// 		rl_redisplay();
-// 		update_var(shell, "OLDPWD", oldpwd);
-// 		update_var(shell, "PWD", getcwd(buf, 256));
-// 	}
-// }
+void	export_two(t_shell **shell, char *old_path)
+{
+	char	buf[BUF];
+
+	export_var(shell, "OLDPWD", old_path);
+	export_var(shell, "PWD", getcwd(buf, BUF));
+	return ;
+}
+
+int	conditions_if(t_shell **shell)
+{
+	if ((*shell)->pipelist->commands_n == 1
+		|| strchr_mod((*shell)->pipelist->args[1], CHAR_TILDE))
+		return (TRUE);
+	return (FALSE);
+}
+
+void	c_cd(t_shell **shell)
+{
+	char	buf[BUF];
+	char	*new_path;
+	char	*old_path;
+	int		error;
+
+	error = 0;
+	old_path = getcwd(buf, BUF);
+	new_path = NULL;
+	if ((*shell)->pipelist->commands_n == 2)
+		new_path = (*shell)->pipelist->args[1];
+	if ((*shell)->pipelist->commands_n > 2 && ++error)
+		ft_printfd(ERROR_CD1, STDERR_FILENO);
+	else if (conditions_if(shell))
+		new_path = (find_var(shell, "HOME", 4, 0))->value;
+	else if ((*shell)->pipelist->args[1]
+		&& (*shell)->pipelist->args[1][0] == CHAR_MINUS)
+	{
+		new_path = oldpwd_switch(shell);
+		error += (new_path == NULL);
+	}
+	if (new_path && change_directory(new_path) < 0)
+		ft_printfd(ERROR_CD3, STDERR_FILENO, new_path);
+	if (returned_error(shell, error))
+		return ;
+	export_two(shell, old_path);
+}

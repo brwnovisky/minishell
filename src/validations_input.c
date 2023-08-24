@@ -6,61 +6,36 @@
 /*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/15 20:53:49 by root              #+#    #+#             */
-/*   Updated: 2023/07/17 12:51:51 by root             ###   ########.fr       */
+/*   Updated: 2023/08/15 20:11:18 by root             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../headers/minishell.h"
-
-char	*is_no_word(t_shell **shell, t_block *current, char *line)
-{
-	char	*line_tmp;
-	
-	while (*line && line == is_special(shell, current, line, SPECIALS))
-	{
-		line_tmp = line;
-		if (line_tmp != line)
-			return (line_tmp);
-		if (is_quote(current->current_command, *line) && ++line)
-		{
-			while (*line != current->quote && *line)
-				line++;
-			break;
-		}
-		else
-			line++;
-		if (line != is_spaces(line, SPACES))
-			break ;
-	}
-	return (line);
-}
+#include "../inc/minishell.h"
 
 char	*is_command(t_shell **shell, t_block *current, char *line)
 {
 	char	*line_tmp;
-	int		line_diff;
 
-	line = is_spaces(line, SPACES);
-	if (!*line || current->set != 1)
+	if (!line || !*line || current->set != COMMAND)
 		return (line);
-	current->set = 5;
-	if (line != is_special(shell, current, line, SPECIALS))
+	current->set = TEST_HEREDOC;
+	if (line != is_special(shell, current, line, STR_SPECIALS))
 	{
-		current->set = 1;
+		current->set = COMMAND;
 		return (line);
 	}
+	current->set = COMMAND;
+	line_tmp = is_no_word(shell, current, line);
 	new_command(current);
-	line_tmp = line;
-	line_tmp = is_no_word(shell, current, line_tmp);
-	current->set = 1;
-	line_diff = line_tmp - line;
-	if (current->current_var && current->current_command->quote != '\'')
-	{
-		current->current_command->arg = current->current_var;
-		current->current_var = NULL;
-	}
+	if (current->expand)
+		current->current_command->arg = current->expand;
 	else
-		current->current_command->arg = ft_substr(line, 0, line_diff);
+		current->current_command->arg = ft_substr(line, 0, (line_tmp - line));
+	if (current->quotes_list && current->quotes_list->quote)
+		current->current_command->arg = quotes_clean(current, \
+	&current->current_command->arg, current->current_command->arg, \
+	ft_strlen(current->current_command->arg));
+	current->expand = NULL;
 	if (!current->commands->next)
 		current->built_in = is_built_in(current->current_command->arg);
 	return (line_tmp);
@@ -70,40 +45,37 @@ char	*is_file_io(t_shell **shell, t_block *current, char *line)
 {
 	char	*line_tmp;
 	char	*file_name;
-	int		line_diff;
 
-	if (current->set < 2 || current->set > 4)
+	if (!line || current->set < INFILE || current->set > OUTFILE_APPEND)
 		return (line);
-	line = is_spaces(line, SPACES);
-	line_tmp = line;
-	line_tmp = is_no_word(shell, current, line_tmp);
+	line = is_spaces(line, STR_SPACES);
+	line_tmp = is_no_word(shell, current, line);
 	if (!line_tmp)
-		return (line);
-	line_diff = line_tmp - line;
-	if (current->current_var && current->quote != '\'')
-		file_name = current->current_var;
+		return (NULL);
+	if (current->expand)
+		file_name = current->expand;
 	else
-	file_name = ft_substr(line, 0, line_diff);
+		file_name = ft_substr(line, 0, (line_tmp - line));
+	if (current->quotes_list && current->quotes_list->quote)
+		file_name = quotes_clean(current, &file_name, file_name, \
+		ft_strlen(file_name));
+	current->expand = NULL;
 	manage_file_descriptors(current, file_name);
-	current->set = 1;
-	if (current->fd[0] < 0 || current->fd[1] < 0)
-		return ("error file");
-	return (line + line_diff);
+	current->set = COMMAND;
+	safe_free(&file_name);
+	return (line_tmp);
 }
 
-char	*is_special(t_shell **shell,
-	t_block *current, char *line, char *specials)
+char	*is_special(t_shell **shell, t_block *current, char *line, char *spcls)
 {
-	while (*specials)
+	while (*spcls)
 	{
-		if (*line != *specials)
-			specials++;
-		else if (*line == *specials)
+		if (*line && *line != *spcls)
+			spcls++;
+		else if (!*line || *line == *spcls)
 		{
-			if (current->set == 5)
+			if (current->set != COMMAND)
 				return (line + 1);
-			if (current->set == 2)
-				return ("error token");
 			return (special_cases(shell, current, line));
 		}
 	}
@@ -112,24 +84,32 @@ char	*is_special(t_shell **shell,
 
 char	*is_spaces(char *line, char *spaces)
 {
-	while (*spaces)
+	while (line && *spaces)
 	{
 		if (*line != *spaces)
 			spaces++;
 		else if (*line == *spaces)
 		{
 			line++;
-			spaces = SPACES;
+			spaces = STR_SPACES;
 		}
 	}
 	return (line);
 }
 
-int	is_var(t_cmd *current_command, char c)
+int	var_define(t_shell **shell, t_block *current, int arg_len)
 {
-	if (current_command->is_var)
-		current_command->var_len += 1;
-	if (c == '$')
-		current_command->is_var = 1;
-	
+	t_env	*var;
+
+	if (current->arg_0[0] == CHAR_VAR && arg_len > 1)
+	{
+		var = find_var(shell, current->arg_0 + 1, arg_len - 1, 0);
+		current->arg_0 = NULL;
+		arg_len = 0;
+		if (var)
+			current->arg_0 = var->value;
+		if (var && var->value)
+			arg_len = ft_strlen(var->value);
+	}
+	return (arg_len);
 }

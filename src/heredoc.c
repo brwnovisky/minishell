@@ -3,25 +3,24 @@
 /*                                                        :::      ::::::::   */
 /*   heredoc.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: root <root@student.42.fr>                  +#+  +:+       +#+        */
+/*   By: tasantos <tasantos@student.42sp.org.br>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/15 20:21:30 by root              #+#    #+#             */
-/*   Updated: 2023/07/15 20:22:55 by root             ###   ########.fr       */
+/*   Updated: 2023/08/20 20:51:12 by tasantos         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../headers/minishell.h"
+#include "../inc/minishell.h"
 
-void wait_heredoc_child(t_shell **shell, int pid)
+void	wait_heredoc_child(t_shell **shell, int pid)
 {
-	int status;
+	int	status;
 
 	signal(SIGINT, SIG_IGN);
 	waitpid(pid, &status, 0);
 	if (WIFEXITED(status))
 			(*shell)->exit_code = WEXITSTATUS(status);
 }
-
 
 void	heredoc_sigint(int signal)
 {
@@ -30,7 +29,7 @@ void	heredoc_sigint(int signal)
 	rl_done = 1;
 	close(rl_instream->_fileno);
 	if (signal)
-		exit(1);
+		exit (SIGINT_HD);
 }
 
 void	heredoc_name_setup(t_shell **shell, t_block *current)
@@ -39,14 +38,14 @@ void	heredoc_name_setup(t_shell **shell, t_block *current)
 	int		len;
 
 	if (!(*shell)->heredoc_name)
-		(*shell)->heredoc_name = ft_substr(HEREDOCNAME, 0, 4);
+		(*shell)->heredoc_name = ft_substr(STR_HEREDOC, 0, 4);
 	else if ((*shell)->heredoc_name)
 	{
 		name = (*shell)->heredoc_name;
 		len = ft_strlen(name);
 		(*shell)->heredoc_name = (char *)ft_calloc(len + 2, sizeof(char));
 		ft_strlcpy((*shell)->heredoc_name, name, len + 1);
-		(*shell)->heredoc_name[len] = 1; 
+		(*shell)->heredoc_name[len] = 1;
 	}
 	current->heredoc_name = (*shell)->heredoc_name;
 }
@@ -60,9 +59,9 @@ void	here_doc_exec(t_shell **shell, t_block *current, char *delimiter)
 	child = fork();
 	if (!child)
 	{
-		current->fd[0] = open(current->heredoc_name, O_CREAT | O_RDWR, 0644);
+		current->fd[0] = open(current->heredoc_name, O_CREAT | O_RDWR, CHMOD);
 		signal_listener(SIG_IGN, heredoc_sigint);
-		while (1)
+		while (TRUE)
 		{
 			user_input = readline("> ");
 			user_input_len = ft_strlen(user_input);
@@ -83,14 +82,18 @@ char	*here_doc_setup(t_shell **shell, t_block *current, char *line)
 	int		line_diff;
 	char	*delimiter;
 
-	current->set = 3;
-	line = is_spaces(line, SPACES);
-	line_tmp = line;
-	line_tmp = is_no_word(shell, current, line_tmp);
-	current->set = 1;
+	line = is_spaces(line, STR_SPACES);
+	line_tmp = is_no_word(shell, current, line);
+	if (!line_tmp)
+		return (NULL);
 	line_diff = line_tmp - line;
 	delimiter = ft_substr(line, 0, line_diff);
+	if (current->quotes_list && current->quotes_list->quote)
+		delimiter = quotes_clean(current, &delimiter, delimiter, \
+		ft_strlen(delimiter));
+	heredoc_name_setup(shell, current);
 	here_doc_exec(shell, current, delimiter);
+	current->set = COMMAND;
 	current->fd[0] = open(current->heredoc_name, O_RDONLY);
 	return (line + line_diff);
 }
